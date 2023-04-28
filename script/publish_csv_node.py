@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import rospy
-import tf2_ros
+# import tf2_ros
 import csv
-from geometry_msgs.msg import TransformStamped
-from tf.transformations import quaternion_multiply, quaternion_norm, quaternion_conjugate
+from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Pose, Point, Quaternion
 
 def read_csv_file(csv_file):
     with open(csv_file, 'r') as f:
@@ -18,30 +18,33 @@ def read_csv_file(csv_file):
 if __name__ == '__main__':
     rospy.init_node('csv_tf_publisher')
 
-    tf_broadcaster = tf2_ros.TransformBroadcaster()
+    csv_file_path = rospy.get_param('~csv_file_path', 'data/frame_data.csv')
 
-    rate = rospy.Rate(2) # Set the publish rate to 2Hz
+    odom_pub = rospy.Publisher('frame_cam', Odometry, queue_size=1)
+
+    rate = rospy.Rate(10) # Set the publish rate to 2Hz
 
     while not rospy.is_shutdown():
-        for quaternion, translation in read_csv_file('frame_data.csv'):
+        for quaternion, translation in read_csv_file(csv_file_path):
             # Normalize quaternion
-            quaternion = quaternion_norm(quaternion)
+            # quaternion = quaternion_norm(quaternion)
 
-            # Create transform message
-            transform_msg = TransformStamped()
-            transform_msg.header.stamp = rospy.Time.now()
-            transform_msg.header.frame_id = 'world'
-            transform_msg.child_frame_id = 'frame'
-            transform_msg.transform.translation.x = translation[0]
-            transform_msg.transform.translation.y = translation[1]
-            transform_msg.transform.translation.z = translation[2]
-            transform_msg.transform.rotation.x = quaternion[0]
-            transform_msg.transform.rotation.y = quaternion[1]
-            transform_msg.transform.rotation.z = quaternion[2]
-            transform_msg.transform.rotation.w = quaternion[3]
+            # Create pose message
+            pose = Pose()
+            pose.position = Point(*translation)
+            pose.orientation = Quaternion(*quaternion)
 
-            # Publish transform message
-            tf_broadcaster.sendTransform(transform_msg)
+            # Create odometry message
+            odom = Odometry()
+            odom.header.stamp = rospy.Time.now()
+            odom.header.frame_id = 'world'
+            odom.child_frame_id = 'frame'
+            odom.pose.pose = pose
+
+            # Publish odometry message
+            odom_pub.publish(odom)
+
+            print('.', end='', flush=True) # Print a dot to indicate progress
 
             rate.sleep()
 

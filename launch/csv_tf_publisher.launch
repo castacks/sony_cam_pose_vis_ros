@@ -1,0 +1,12 @@
+<launch>
+  <arg name="csv_file_path" 
+       default="$(find sony_cam_pose_vis_ros)/data/frame_data.csv" />
+
+  <node pkg="sony_cam_pose_vis_ros" 
+        type="publish_csv_node.py" 
+        name="publish_csv_node"
+        required="true"
+        output="screen" >
+    <param name="csv_file_path" value="$(arg csv_file_path)" />
+  </node>
+</launch>
